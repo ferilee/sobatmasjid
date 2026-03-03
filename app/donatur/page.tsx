@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GlassCard } from "@/components/ui/glass-card";
+import { FloatingInput, FloatingSelect } from "@/components/ui/floating-field";
+import { GradientButton } from "@/components/ui/gradient-button";
+import { HeroPanel } from "@/components/ui/hero-panel";
 
 export default function DonaturPage() {
   const [events, setEvents] = useState<any[]>([]);
-  const [eventId, setEventId] = useState(0);
+  const [eventId, setEventId] = useState("");
   const [type, setType] = useState("uang");
   const [value, setValue] = useState("");
   const [message, setMessage] = useState("");
@@ -13,13 +17,14 @@ export default function DonaturPage() {
     fetch("/api/donations/events")
       .then((r) => r.json())
       .then((d) => {
-        setEvents(d.events || []);
-        if ((d.events || []).length > 0) setEventId(d.events[0].id);
+        const list = d.events || [];
+        setEvents(list);
+        if (list.length > 0) setEventId(String(list[0].id));
       });
   }, []);
 
   async function donate() {
-    const payload: any = { eventId, type };
+    const payload: any = { eventId: Number(eventId), type };
     if (type === "uang") payload.amountMoney = Number(value);
     if (type !== "uang") payload.itemName = value;
     const res = await fetch("/api/donations", {
@@ -32,21 +37,38 @@ export default function DonaturPage() {
   }
 
   return (
-    <section className="grid gap-3 rounded-xl bg-white p-6 shadow">
-      <h1 className="text-xl font-bold">Donatur - Dana, Logistik, Konsumsi</h1>
-      <select className="rounded border p-2" value={eventId} onChange={(e) => setEventId(Number(e.target.value))}>
-        {events.map((e) => (
-          <option value={e.id} key={e.id}>{e.title}</option>
-        ))}
-      </select>
-      <select className="rounded border p-2" value={type} onChange={(e) => setType(e.target.value)}>
-        <option value="uang">Dana</option>
-        <option value="logistik">Logistik</option>
-        <option value="konsumsi">Konsumsi</option>
-      </select>
-      <input className="rounded border p-2" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Nominal atau item" />
-      <button className="rounded bg-accent px-4 py-2 text-white" onClick={donate}>Kirim Donasi</button>
-      <p className="text-sm text-slate-600">{message}</p>
+    <section className="grid gap-5">
+      <HeroPanel title="Donatur: Dana, Logistik, Konsumsi" description="Pilih aksi lalu tentukan bentuk dukungan untuk hari pelaksanaan." />
+
+      <GlassCard className="rounded-3xl p-5 md:p-6">
+        <div className="grid gap-3 md:grid-cols-2">
+          <FloatingSelect
+            label="Pilih Aksi"
+            value={eventId}
+            onChange={(e) => setEventId(e.target.value)}
+            options={events.map((e) => ({ value: String(e.id), label: e.title }))}
+          />
+          <FloatingSelect
+            label="Jenis Donasi"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            options={[
+              { value: "uang", label: "Dana" },
+              { value: "logistik", label: "Logistik" },
+              { value: "konsumsi", label: "Konsumsi" },
+            ]}
+          />
+        </div>
+
+        <FloatingInput className="mt-3" label={type === "uang" ? "Nominal" : "Nama Item"} value={value} onChange={(e) => setValue(e.target.value)} />
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <GradientButton variant="amber" onClick={donate}>
+            Kirim Donasi
+          </GradientButton>
+          <p className="text-sm text-cyan-100">{message}</p>
+        </div>
+      </GlassCard>
     </section>
   );
 }

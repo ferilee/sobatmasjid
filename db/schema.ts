@@ -15,15 +15,15 @@ import {
   varchar,
 } from "drizzle-orm/mysql-core";
 
-export const roleEnum = mysqlEnum("role", ["volunteer", "donatur", "partner", "admin"]);
-export const eventStatusEnum = mysqlEnum("event_status", [
+export const roleValues = ["volunteer", "donatur", "partner", "admin"] as const;
+export const eventStatusValues = [
   "pending_verification",
   "open_recruitment",
   "active",
   "done",
   "cancelled",
-]);
-export const contributionTypeEnum = mysqlEnum("contribution_type", ["uang", "logistik", "konsumsi"]);
+] as const;
+export const contributionTypeValues = ["uang", "logistik", "konsumsi"] as const;
 
 export const users = mysqlTable(
   "users",
@@ -32,8 +32,12 @@ export const users = mysqlTable(
     email: varchar("email", { length: 191 }).notNull(),
     name: varchar("name", { length: 120 }),
     region: varchar("region", { length: 120 }),
-    primaryRole: roleEnum("primary_role").notNull().default("volunteer"),
-    activeRole: roleEnum("active_role").notNull().default("volunteer"),
+    primaryRole: mysqlEnum("primary_role", roleValues)
+      .notNull()
+      .default("volunteer"),
+    activeRole: mysqlEnum("active_role", roleValues)
+      .notNull()
+      .default("volunteer"),
     isOnboarded: int("is_onboarded").notNull().default(0),
     xp: int("xp").notNull().default(0),
     badgeLevel: int("badge_level").notNull().default(1),
@@ -52,7 +56,7 @@ export const userRoles = mysqlTable(
     userId: varchar("user_id", { length: 36 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    role: roleEnum("role").notNull(),
+    role: mysqlEnum("role", roleValues).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
@@ -63,7 +67,9 @@ export const userRoles = mysqlTable(
 export const otpCodes = mysqlTable(
   "otp_codes",
   {
-    id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+    id: bigint("id", { mode: "number", unsigned: true })
+      .autoincrement()
+      .primaryKey(),
     email: varchar("email", { length: 191 }).notNull(),
     codeHash: varchar("code_hash", { length: 128 }).notNull(),
     expiresAt: datetime("expires_at", { mode: "date" }).notNull(),
@@ -93,7 +99,9 @@ export const sessions = mysqlTable(
 export const mosques = mysqlTable(
   "mosques",
   {
-    id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+    id: bigint("id", { mode: "number", unsigned: true })
+      .autoincrement()
+      .primaryKey(),
     name: varchar("name", { length: 191 }).notNull(),
     address: text("address").notNull(),
     latitude: double("latitude").notNull(),
@@ -107,14 +115,19 @@ export const mosques = mysqlTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
-    locationIdx: index("mosques_location_idx").on(table.latitude, table.longitude),
+    locationIdx: index("mosques_location_idx").on(
+      table.latitude,
+      table.longitude,
+    ),
   }),
 );
 
 export const events = mysqlTable(
   "events",
   {
-    id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+    id: bigint("id", { mode: "number", unsigned: true })
+      .autoincrement()
+      .primaryKey(),
     mosqueId: bigint("mosque_id", { mode: "number", unsigned: true })
       .notNull()
       .references(() => mosques.id, { onDelete: "cascade" }),
@@ -123,7 +136,9 @@ export const events = mysqlTable(
       .references(() => users.id),
     title: varchar("title", { length: 191 }).notNull(),
     description: text("description"),
-    status: eventStatusEnum("status").notNull().default("pending_verification"),
+    status: mysqlEnum("status", eventStatusValues)
+      .notNull()
+      .default("pending_verification"),
     scheduledAt: datetime("scheduled_at", { mode: "date" }).notNull(),
     volunteerQuota: int("volunteer_quota").notNull().default(20),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -156,14 +171,16 @@ export const volunteersOnEvent = mysqlTable(
 export const contributions = mysqlTable(
   "contributions",
   {
-    id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+    id: bigint("id", { mode: "number", unsigned: true })
+      .autoincrement()
+      .primaryKey(),
     eventId: bigint("event_id", { mode: "number", unsigned: true })
       .notNull()
       .references(() => events.id, { onDelete: "cascade" }),
     userId: varchar("user_id", { length: 36 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    type: contributionTypeEnum("type").notNull(),
+    type: mysqlEnum("type", contributionTypeValues).notNull(),
     amountMoney: int("amount_money"),
     itemName: varchar("item_name", { length: 120 }),
     itemQty: int("item_qty"),
@@ -178,7 +195,9 @@ export const contributions = mysqlTable(
 );
 
 export const chatLinks = mysqlTable("chat_links", {
-  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  id: bigint("id", { mode: "number", unsigned: true })
+    .autoincrement()
+    .primaryKey(),
   eventId: bigint("event_id", { mode: "number", unsigned: true })
     .notNull()
     .references(() => events.id, { onDelete: "cascade" }),
@@ -188,12 +207,17 @@ export const chatLinks = mysqlTable("chat_links", {
 });
 
 export const eventReports = mysqlTable("event_reports", {
-  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  id: bigint("id", { mode: "number", unsigned: true })
+    .autoincrement()
+    .primaryKey(),
   eventId: bigint("event_id", { mode: "number", unsigned: true })
     .notNull()
     .references(() => events.id, { onDelete: "cascade" }),
   summary: text("summary").notNull(),
-  photos: json("photos").$type<string[]>().notNull().default(sql`(json_array())`),
+  photos: json("photos")
+    .$type<string[]>()
+    .notNull()
+    .default(sql`(json_array())`),
   createdByUserId: varchar("created_by_user_id", { length: 36 })
     .notNull()
     .references(() => users.id),
@@ -201,13 +225,18 @@ export const eventReports = mysqlTable("event_reports", {
 });
 
 export const activityFeed = mysqlTable("activity_feed", {
-  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  id: bigint("id", { mode: "number", unsigned: true })
+    .autoincrement()
+    .primaryKey(),
   eventId: bigint("event_id", { mode: "number", unsigned: true })
     .notNull()
     .references(() => events.id, { onDelete: "cascade" }),
-  reportId: bigint("report_id", { mode: "number", unsigned: true }).references(() => eventReports.id, {
-    onDelete: "set null",
-  }),
+  reportId: bigint("report_id", { mode: "number", unsigned: true }).references(
+    () => eventReports.id,
+    {
+      onDelete: "set null",
+    },
+  ),
   type: varchar("type", { length: 32 }).notNull().default("report_published"),
   message: text("message").notNull(),
   imageUrl: text("image_url"),
@@ -252,16 +281,19 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   feedItems: many(activityFeed),
 }));
 
-export const volunteersOnEventRelations = relations(volunteersOnEvent, ({ one }) => ({
-  event: one(events, {
-    fields: [volunteersOnEvent.eventId],
-    references: [events.id],
+export const volunteersOnEventRelations = relations(
+  volunteersOnEvent,
+  ({ one }) => ({
+    event: one(events, {
+      fields: [volunteersOnEvent.eventId],
+      references: [events.id],
+    }),
+    user: one(users, {
+      fields: [volunteersOnEvent.userId],
+      references: [users.id],
+    }),
   }),
-  user: one(users, {
-    fields: [volunteersOnEvent.userId],
-    references: [users.id],
-  }),
-}));
+);
 
 export const contributionsRelations = relations(contributions, ({ one }) => ({
   event: one(events, {

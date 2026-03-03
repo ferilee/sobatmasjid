@@ -22,7 +22,8 @@ import {
 } from "@/lib/auth";
 import { haversineKm } from "@/lib/geo";
 
-const app = new Hono().basePath("/api");
+type AppUser = typeof users.$inferSelect;
+const app = new Hono<{ Variables: { user: AppUser } }>().basePath("/api");
 
 app.get("/health", (c) => c.json({ ok: true }));
 
@@ -58,7 +59,8 @@ app.post(
   async (c) => {
     const { email, code } = c.req.valid("json");
     const result = await verifyOtpAndCreateSession(email.toLowerCase(), code);
-    if (!result) return c.json({ message: "OTP tidak valid atau kadaluarsa." }, 400);
+    if (!result)
+      return c.json({ message: "OTP tidak valid atau kadaluarsa." }, 400);
 
     c.header("Set-Cookie", makeCookie(result.plainToken, result.expiresAt));
     return c.json({ message: "Login berhasil.", user: result.user });
@@ -80,7 +82,10 @@ app.use("*", async (c, next) => {
 
 app.get("/me", async (c) => {
   const user = c.get("user");
-  const roles = await db.select().from(userRoles).where(eq(userRoles.userId, user.id));
+  const roles = await db
+    .select()
+    .from(userRoles)
+    .where(eq(userRoles.userId, user.id));
   return c.json({ user, roles: roles.map((r) => r.role) });
 });
 
@@ -91,7 +96,7 @@ app.put(
     z.object({
       name: z.string().min(2).max(120),
       region: z.string().min(2).max(120),
-      roles: z.array(z.enum(["volunteer", "donatur", "partner"])) .min(1),
+      roles: z.array(z.enum(["volunteer", "donatur", "partner"])).min(1),
       activeRole: z.enum(["volunteer", "donatur", "partner"]).optional(),
     }),
   ),
@@ -111,7 +116,9 @@ app.put(
       .where(eq(users.id, me.id));
 
     await db.delete(userRoles).where(eq(userRoles.userId, me.id));
-    await db.insert(userRoles).values(payload.roles.map((role) => ({ userId: me.id, role })));
+    await db
+      .insert(userRoles)
+      .values(payload.roles.map((role) => ({ userId: me.id, role })));
 
     return c.json({ message: "Onboarding tersimpan." });
   },
@@ -119,7 +126,10 @@ app.put(
 
 app.post(
   "/roles/active",
-  zValidator("json", z.object({ role: z.enum(["volunteer", "donatur", "partner"]) })),
+  zValidator(
+    "json",
+    z.object({ role: z.enum(["volunteer", "donatur", "partner"]) }),
+  ),
   async (c) => {
     const me = c.get("user");
     const { role } = c.req.valid("json");
@@ -182,7 +192,10 @@ app.post(
       })
       .$returningId();
 
-    return c.json({ message: "Request cleansing berhasil dibuat.", eventId: event.id });
+    return c.json({
+      message: "Request cleansing berhasil dibuat.",
+      eventId: event.id,
+    });
   },
 );
 
@@ -201,7 +214,13 @@ app.patch(
   zValidator(
     "json",
     z.object({
-      status: z.enum(["pending_verification", "open_recruitment", "active", "done", "cancelled"]),
+      status: z.enum([
+        "pending_verification",
+        "open_recruitment",
+        "active",
+        "done",
+        "cancelled",
+      ]),
     }),
   ),
   async (c) => {
@@ -237,7 +256,12 @@ app.get(
     const filtered = rows
       .map((item) => ({
         ...item,
-        distanceKm: haversineKm(lat, lng, item.mosque.latitude, item.mosque.longitude),
+        distanceKm: haversineKm(
+          lat,
+          lng,
+          item.mosque.latitude,
+          item.mosque.longitude,
+        ),
       }))
       .filter((item) => item.distanceKm <= radiusKm);
 
@@ -336,7 +360,10 @@ app.post(
       })
       .$returningId();
 
-    await db.update(events).set({ status: payload.nextStatus }).where(eq(events.id, id));
+    await db
+      .update(events)
+      .set({ status: payload.nextStatus })
+      .where(eq(events.id, id));
 
     if (payload.nextStatus === "done") {
       const joined = await db.query.volunteersOnEvent.findMany({
@@ -347,7 +374,12 @@ app.post(
         await db
           .update(volunteersOnEvent)
           .set({ xpAwarded: 25, status: "completed" })
-          .where(and(eq(volunteersOnEvent.eventId, id), eq(volunteersOnEvent.userId, item.userId)));
+          .where(
+            and(
+              eq(volunteersOnEvent.eventId, id),
+              eq(volunteersOnEvent.userId, item.userId),
+            ),
+          );
 
         await db
           .update(users)
@@ -364,7 +396,8 @@ app.post(
         eventId: id,
         reportId: report.id,
         type: "report_published",
-        message: "Aksi bersih masjid selesai. Laporan dokumentasi sudah terbit.",
+        message:
+          "Aksi bersih masjid selesai. Laporan dokumentasi sudah terbit.",
         imageUrl: payload.photos[0] || null,
       });
     }
@@ -423,9 +456,18 @@ app.get("/dashboard/stats", async (c) => {
 
 app.onError((error, c) => {
   console.error(error);
-  return c.json({ message: error instanceof Error ? error.message : "Unknown error" }, 500);
+  return c.json(
+    { message: error instanceof Error ? error.message : "Unknown error" },
+    500,
+  );
 });
 
 const handler = handle(app);
 export const runtime = "nodejs";
-export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE };
+export {
+  handler as GET,
+  handler as POST,
+  handler as PUT,
+  handler as PATCH,
+  handler as DELETE,
+};
