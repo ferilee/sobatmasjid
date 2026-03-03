@@ -1,0 +1,67 @@
+Ringkasan alur kerja (*user flow*) dan fitur utama aplikasi SobatMasjid:
+
+---
+
+## ## Arsitektur & Alur Aplikasi (User Flow)
+
+Alur dimulai dengan **Email OTP Login**, yang memastikan kemudahan akses tanpa perlu menghafal kata sandi, sekaligus memvalidasi identitas pengguna.
+
+1. **Onboarding & Role Selection:** Setelah login pertama kali, pengguna melengkapi profil singkat dan memilih minat utama mereka (Volunteer, Donatur, atau Partner). Pengguna bisa berpindah peran kapan saja.
+2. **Request & Discovery (Partner):** Partner (Takmir/Warga) mengajukan permohonan pembersihan masjid melalui form digital.
+3. **Mobilisasi (Volunteer):** Setelah permohonan divalidasi, sistem membuka "Open Recruitment" aksi. Volunteer di wilayah terdekat akan mendapatkan notifikasi dan masuk ke dalam grup koordinasi.
+4. **Support System (Donatur):** Donatur melihat daftar aksi yang akan datang dan memilih cara berkontribusi (Dana, Logistik, atau Konsumsi langsung ke lokasi).
+5. **Execution & Report:** Aksi dilakukan, dokumentasi diunggah, dan sistem mengirimkan laporan transparansi kepada semua pihak yang terlibat.
+
+---
+
+## ## Fitur Utama Berdasarkan Peran
+
+### 1. Modul Volunteer (Pejuang Resik)
+
+Fokus pada koordinasi lapangan dan komunitas.
+
+* **Geolocation Matchmaking:** Otomatis memasukkan volunteer ke grup wilayah (misal: "Sobat Masjid Lumajang").
+* **Daftar Aksi Terdekat:** Daftar masjid yang akan segera dibersihkan dalam radius tertentu.
+* **Live Chat/Group Link:** Integrasi ke grup koordinasi (WhatsApp/Telegram) atau chat internal untuk teknis keberangkatan.
+* **Badges & XP:** Sistem apresiasi (gamifikasi) berdasarkan jumlah aksi yang diikuti.
+
+### 2. Modul Donatur (Penyokong Kebaikan)
+
+Fokus pada kemudahan berbagi, baik materi maupun non-materi.
+
+* **Pilihan Donasi Variatif:**
+* *Transfer:* Integrasi Payment Gateway untuk dana operasional.
+* *Logistik:* List kebutuhan (misal: "Butuh 5 botol karbol") yang bisa dikirim atau diantar.
+* *Konsumsi (Catering/Self):* Opsi untuk mengirim gorengan/kopi langsung saat hari H.
+
+
+* **Track Record Donasi:** Riwayat bantuan yang pernah diberikan.
+* **Laporan Dokumentasi:** Notifikasi foto masjid yang sudah bersih sebagai bentuk pertanggungjawaban.
+
+### 3. Modul Partnership (Mitra Masjid)
+
+Fokus pada manajemen data masjid dan jadwal.
+
+* **Request Cleansing:** Form pengajuan (Nama Masjid, Lokasi/Pin Point, Foto Kondisi, dan Kontak Penanggung Jawab).
+* **Dashboard Status:** Memantau apakah permintaan sudah diverifikasi, sedang dicari relawan, atau sudah selesai.
+* **Direct Contact:** Akses langsung untuk berkomunikasi dengan koordinator lapangan Sobat Masjid.
+
+---
+
+## ## Fitur Pendukung (Admin & General)
+
+* **OTP Email Service:** Autentikasi aman menggunakan Nodemailer/Resend melalui Bun.
+* **Interactive Dashboard (Shadcn UI):** Grafik jumlah masjid yang dibersihkan dan total relawan yang aktif.
+* **Shared Activity Feed:** Beranda sosial yang menampilkan foto-foto aksi terbaru untuk meningkatkan *engagement*.
+
+---
+
+## ## Skema Database (Drizzle & MariaDB)
+
+Untuk mendukung alur di atas, kita akan membutuhkan tabel utama:
+
+* `users`: ID, Email, Nama, Role, Wilayah.
+* `mosques`: Data masjid, titik koordinat, dan kontak takmir.
+* `events`: Jadwal aksi, status (pending/active/done).
+* `contributions`: Pencatatan donasi (tipe: uang/barang/makanan).
+* `volunteers_on_event`: Relasi yang mencatat siapa saja yang ikut di aksi tertentu.
