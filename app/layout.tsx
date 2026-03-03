@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -22,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${jakarta.variable} min-h-screen`}>
-        <header className="border-b border-white/30 bg-slate-950/35 backdrop-blur-md">
+        <header className="fixed inset-x-0 top-0 z-50 hidden border-b border-white/25 bg-slate-950/30 backdrop-blur-md md:block">
           <nav className="mx-auto flex max-w-6xl flex-wrap gap-4 p-4 text-sm text-white">
             <Link className="font-medium hover:text-cyan-200" href="/">
               Login
@@ -50,7 +51,10 @@ export default function RootLayout({
             </Link>
           </nav>
         </header>
-        <main className="mx-auto max-w-6xl p-4 md:p-8">{children}</main>
+        <main className="mx-auto max-w-6xl p-4 pb-24 pt-4 md:p-8 md:pb-8 md:pt-24">
+          {children}
+        </main>
+        <MobileBottomNav />
       </body>
     </html>
   );
